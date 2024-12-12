@@ -122,13 +122,29 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "Sales Invoice": {
+        "on_submit": "balance_integration.api.handle_sales_invoice_submit",
+    },
+    "Credit Note": {
+        "on_submit": "balance_integration.api.handle_credit_note_submit",
+    }
+}
+
+# Custom Scripts
+doctype_js = {
+    "Customer": "public/js/customer.js"
+}
+
+# Patches
+fixtures = [
+    {
+        "doctype": "Custom Field",
+        "filters": [
+            ["name", "=", "Sales Invoice-balance_transaction_id"]
+        ]
+    }
+]
 
 # Scheduled Tasks
 # ---------------
