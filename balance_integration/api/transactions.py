@@ -15,35 +15,61 @@ def create_balance_transaction(doc, settings):
         frappe.throw(_("Sales Invoice must have at least one item"))
 
     try:
+        # Get customer information
+        customer = frappe.get_doc("Customer", doc.customer)
+        if not customer:
+            frappe.throw(_("Customer not found"))
+            
+        if not customer.email_id:
+            frappe.throw(_("Customer email is required"))
+            
+        if not customer.mobile_no:
+            frappe.throw(_("Customer mobile number is required"))
+            
+        # Get shipping address
+        if not doc.shipping_address_name:
+            frappe.throw(_("Shipping address is required"))
+            
+        shipping_address = frappe.get_doc("Address", doc.shipping_address_name)
+        if not shipping_address:
+            frappe.throw(_("Shipping address not found"))
+            
+        country = frappe.get_doc("Country", shipping_address.country)
+        if not country or not country.code:
+            frappe.throw(_("Invalid country code in shipping address"))
+
         # Create line items
         lines = []
         for item in doc.items:
+            if not item.qty or not item.rate:
+                frappe.throw(_("Item quantity and rate are required"))
+                
             line_item = {
-                "title": item.item_name,
-                "quantity": item.qty,
-                "price": item.rate
+                "title": item.item_name or item.item_code,
+                "quantity": float(item.qty),
+                "price": float(item.rate)
             }
             lines.append(line_item)
 
         if doc.total_taxes_and_charges:
             lines.append({
-                "tax": doc.total_taxes_and_charges
+                "tax": float(doc.total_taxes_and_charges)
             })
 
         # Create payload
         payload = {
             "communicationConfig": {
-                "emailsTo": [doc.owner]
+                "emailsTo": [customer.email_id]  # Use customer email instead of owner
             },
-            "amount": doc.grand_total,
+            "amount": float(doc.grand_total),
             "currency": doc.currency,
             "buyer": {
                 "employee": {
                     "email": doc.modified_by
                 },
-                "email": doc.contact_email,
-                "first_name": doc.contact_person,
-                "phone": doc.contact_mobile,
+                "email": customer.email_id,
+                "first_name": customer.customer_name,
+                "phone": customer.mobile_no,
                 "draft": False,
             },
             "plan": { 
@@ -51,8 +77,15 @@ def create_balance_transaction(doc, settings):
             },
             "lines": lines,
             "externalReferenceId": doc.name,
-            "shippingAddress": doc.shipping_address,
-            "totalDiscount": doc.discount_amount or 0,
+            "shippingAddress": {
+                "addressLine1": shipping_address.address_line1 or "",
+                "addressLine2": shipping_address.address_line2 or "",
+                "zipCode": shipping_address.pincode or "",
+                "city": shipping_address.city or "",
+                "state": shipping_address.state or "",
+                "countryCode": country.code or ""
+            },
+            "totalDiscount": float(doc.discount_amount or 0),
             "marketplaceFixedTake": 0,
             "autoPayouts": False,
             "statementDescriptor": {

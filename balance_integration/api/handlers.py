@@ -16,7 +16,7 @@ def handle_sales_invoice_submit(doc, method):
         if not settings:
             frappe.throw(_("Balance Settings not configured"))
         
-        invoice = frappe.get_doc('Sales Invoice', frappe.doc.name)
+        invoice = frappe.get_doc('Sales Invoice', doc.name)
         if not invoice:
             frappe.throw(_("Sales Invoice not found"))
         
