@@ -8,23 +8,10 @@ def create_balance_transaction(doc, settings):
     if not doc:
         frappe.throw(_("No document provided"))
         
-    if not hasattr(doc, 'doctype') or doc.doctype != "Sales Invoice":
-        frappe.throw(_("Invalid document type. Expected Sales Invoice"))
-        
-    if not hasattr(doc, 'name') or not doc.name:
-        frappe.throw(_("Document must have a name"))
-        
-    if not hasattr(doc, 'customer') or not doc.customer:
-        frappe.throw(_("Sales Invoice must have a customer"))
-
-    if not hasattr(doc, 'shipping_address_name') or not doc.shipping_address_name:
-        frappe.throw(_("Shipping address is required for Balance transaction"))
+    if not doc.doctype == "Sales Invoice":
+        frappe.throw(_("Invalid document type"))
 
     try:
-        # Get required information
-        customer_info = get_customer_information(doc.customer)
-        shipping_address = get_shipping_address(doc.shipping_address_name)
-
         # Create line items
         lines = []
         for item in doc.items:
@@ -35,7 +22,7 @@ def create_balance_transaction(doc, settings):
             }
             lines.append(line_item)
 
-        if hasattr(doc, 'total_taxes_and_charges') and doc.total_taxes_and_charges:
+        if doc.total_taxes_and_charges:
             lines.append({
                 "tax": doc.total_taxes_and_charges
             })
@@ -51,9 +38,9 @@ def create_balance_transaction(doc, settings):
                 "employee": {
                     "email": doc.modified_by
                 },
-                "email": customer_info["email"],
-                "first_name": customer_info["customer_name"],
-                "phone": customer_info["mobile_no"],
+                "email": doc.contact_email,
+                "first_name": doc.contact_person,
+                "phone": doc.contact_mobile,
                 "draft": False,
             },
             "plan": { 
@@ -61,8 +48,8 @@ def create_balance_transaction(doc, settings):
             },
             "lines": lines,
             "externalReferenceId": doc.name,
-            "shippingAddress": shipping_address,
-            "totalDiscount": doc.discount_amount if hasattr(doc, 'discount_amount') else 0,
+            "shippingAddress": doc.shipping_address,
+            "totalDiscount": doc.discount_amount or 0,
             "marketplaceFixedTake": 0,
             "autoPayouts": False,
             "statementDescriptor": {

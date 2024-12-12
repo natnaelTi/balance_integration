@@ -14,16 +14,14 @@ def handle_sales_invoice_submit(doc, method):
         # Get Balance settings first
         settings = get_balance_settings()
         
-        # Ensure we have a proper document object
-        if not doc:
-            frappe.throw(_("No document provided"))
-            
-        if isinstance(doc, str):
-            doc = frappe.get_doc("Sales Invoice", doc)
-            
+        # Ensure we have a proper document
+        # if not doc:
+        #     frappe.throw(_("No document provided"))
+        
+        # Basic validation
         if not doc.doctype == "Sales Invoice":
-            frappe.throw(_("Document must be a Sales Invoice"))
-            
+            frappe.throw(_("Invalid document type"))
+        
         # Create transaction
         transaction = create_balance_transaction(doc, settings)
         
@@ -39,7 +37,7 @@ def handle_sales_invoice_submit(doc, method):
         frappe.db.commit()
         
     except Exception as e:
-        frappe.log_error(f"Balance Integration Error: {str(e)}", "Balance Payment Processing")
+        frappe.log_error(str(e), "Balance Payment Processing Error")
         frappe.throw(_("Error processing Balance payment. Please check error logs."))
 
 def handle_credit_note_submit(doc, method):

@@ -11,17 +11,6 @@ def get_balance_settings():
     
     return settings
 
-def get_invoice_details(doc_name):
-    frappe.log_error(f"Fetching Invoice Details: {doc_name}")
-
-    invoice = frappe.db.get_doc("Sales Invoice", doc_name, "name")
-    if not invoice:
-        frappe.throw(_("Sales Invoice not found"))
-
-    frappe.log_error(f"Sales Invoice Object: {invoice.name}")
-
-    return invoice
-
 def get_customer_information(customer_name):
     """Get customer information from Customer doctype"""
     if not customer_name:
@@ -44,17 +33,27 @@ def get_customer_information(customer_name):
     }
 
 def get_shipping_address(shipping_address_name):
+    """Get shipping address information"""
+    if not shipping_address_name:
+        frappe.throw(_("Shipping address name is required"))
+        
     shipping_address = frappe.get_doc("Address", shipping_address_name)
     if not shipping_address:
         frappe.throw(_("Shipping Address not found"))
+        
+    country = frappe.get_doc("Country", shipping_address.country)
+    if not country or not country.code:
+        frappe.throw(_("Invalid country code in shipping address"))
+    
     return {
-        "addressLine1": shipping_address.address_line1,
-        "addressLine2": shipping_address.address_line2,
-        "zipCode": shipping_address.pincode,
-        "city": shipping_address.city,
-        "state": shipping_address.state,
-        "countryCode": frappe.get_doc("Country", shipping_address.country).code
+        "addressLine1": shipping_address.address_line1 or "",
+        "addressLine2": shipping_address.address_line2 or "",
+        "zipCode": shipping_address.pincode or "",
+        "city": shipping_address.city or "",
+        "state": shipping_address.state or "",
+        "countryCode": country.code
     }
+
 def make_request(method, endpoint, api_key, data=None):
     """Make API request to Balance"""
     headers = {

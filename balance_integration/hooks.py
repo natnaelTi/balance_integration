@@ -124,10 +124,10 @@ app_license = "mit"
 
 doc_events = {
     "Sales Invoice": {
-        "on_submit": "balance_integration.api.handle_sales_invoice_submit",
+        "on_submit": "balance_integration.api.handlers.handle_sales_invoice_submit",
     },
     "Credit Note": {
-        "on_submit": "balance_integration.api.handle_credit_note_submit",
+        "on_submit": "balance_integration.api.handlers.handle_credit_note_submit",
     }
 }
 
