@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from balance_integration.utils import get_balance_settings, get_customer_information, get_shipping_address, get_invoice_details, make_request
+from balance_integration.utils import make_request
 
 """Create a transaction in Balance"""
 def create_balance_transaction(doc, settings):
@@ -10,6 +10,9 @@ def create_balance_transaction(doc, settings):
         
     if not doc.doctype == "Sales Invoice":
         frappe.throw(_("Invalid document type"))
+        
+    if not doc.items:
+        frappe.throw(_("Sales Invoice must have at least one item"))
 
     try:
         # Create line items

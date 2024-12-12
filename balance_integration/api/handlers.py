@@ -13,17 +13,17 @@ def handle_sales_invoice_submit(doc, method):
     try:
         # Get Balance settings first
         settings = get_balance_settings()
+        if not settings:
+            frappe.throw(_("Balance Settings not configured"))
         
-        # Ensure we have a proper document
-        # if not doc:
-        #     frappe.throw(_("No document provided"))
-        
-        # Basic validation
-        if not doc.doctype == "Sales Invoice":
-            frappe.throw(_("Invalid document type"))
+        invoice = frappe.get_doc('Sales Invoice', frappe.doc.name)
+        if not invoice:
+            frappe.throw(_("Sales Invoice not found"))
         
         # Create transaction
-        transaction = create_balance_transaction(doc, settings)
+        transaction = create_balance_transaction(invoice, settings)
+        if not transaction or not transaction.get('id'):
+            frappe.throw(_("Failed to create Balance transaction"))
         
         # Confirm transaction
         confirm_transaction(transaction['id'], settings)
