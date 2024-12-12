@@ -15,28 +15,29 @@ def get_balance_settings():
     if not settings.api_base_url:
         frappe.throw(_("Balance API Base URL is required"))
     
-    # Ensure API base URL ends with /
-    # if not settings.api_base_url.endswith('/'):
-    #     settings.api_base_url = f"{settings.api_base_url}/"
-    
     # Log settings (minimal)
-    frappe.log_error(f"Using Balance API: {settings.api_base_url}")
+    # frappe.log_error(f"Using Balance API: {settings.api_base_url}")
     
     return settings
 
 def make_request(method, endpoint, api_key, data=None):
     """Make API request to Balance"""
+    # Ensure API key is properly formatted
+    # if not api_key.startswith('sk_'):
+    #     api_key = f"sk_sandbox_{api_key}"
+    
     headers = {
-        "x-api-key": api_key
+        "x-api-key": api_key,
+        "Content-Type": "application/json",
+        "Accept": "*/*",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
     }
     
     try:
-        frappe.log_error(
-            f"Making Balance API request:\n"
-            f"Method: {method}\n"
-            f"Endpoint: {endpoint}\n"
-            # f"Headers: {{'Content-Type': {headers['Content-Type']}, 'Accept': {headers['Accept']}}}"
-        )
+        # Log minimal request info
+        # frappe.log_error(f"Balance API Request: {method} {endpoint}")
         
         response = requests.request(
             method=method,
@@ -45,20 +46,23 @@ def make_request(method, endpoint, api_key, data=None):
             json=data
         )
         
-        frappe.log_error(
-            f"Balance API response:\n"
-            f"Status Code: {response.status_code}\n"
-            f"Response Headers: {dict(response.headers)}"
-        )
+        # Get response text for error handling
+        # try:
+        response_data = response.json()
+        # except:
+        #     response_data = response.text[:100]  # Limit text length
+        
+        # Log minimal response info
+        frappe.log_error(f"Balance API Status: {response.status_code}")
+        
+        if response.status_code == 401:
+            frappe.log_error(f"Auth Error Response: {response_data}")
+            frappe.throw(_("Authentication failed. Please check your API key."))
         
         response.raise_for_status()
         return response.json()
+        
     except requests.exceptions.RequestException as e:
-        error_msg = (
-            f"Balance API Error:\n"
-            f"Status Code: {getattr(e.response, 'status_code', 'N/A')}\n"
-            f"Error Message: {str(e)}\n"
-            f"Response Text: {getattr(e.response, 'text', 'N/A')}"
-        )
-        frappe.log_error(error_msg, "Balance API Request Error")
+        error_msg = f"API Error: {str(e)}"  # Limit error message length
+        frappe.log_error(error_msg)
         raise

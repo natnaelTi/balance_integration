@@ -40,6 +40,8 @@ def create_balance_transaction(doc, settings):
 
         # Create line items
         lines = []
+        line_items = []
+
         for item in doc.items:
             if not item.qty or not item.rate:
                 frappe.throw(_("Item quantity and rate are required"))
@@ -49,17 +51,25 @@ def create_balance_transaction(doc, settings):
                 "quantity": float(item.qty),
                 "price": float(item.rate)
             }
-            lines.append(line_item)
+            line_items.append(line_item)
+        
+        lines.append({
+            "lineItems": line_items
+        })
 
         if doc.total_taxes_and_charges:
             lines.append({
                 "tax": float(doc.total_taxes_and_charges)
             })
 
+        # Format the posting date as ISO string
+        charge_date = doc.posting_date.strftime("%Y-%m-%d") if doc.posting_date else None
+        frappe.log_error(f"Posting Date: {charge_date}")
+
         # Create payload
         payload = {
             "communicationConfig": {
-                "emailsTo": [customer.email_id]  # Use customer email instead of owner
+                "emailsTo": [customer.email_id]
             },
             "amount": float(doc.grand_total),
             "currency": doc.currency,
@@ -73,7 +83,8 @@ def create_balance_transaction(doc, settings):
                 "draft": False,
             },
             "plan": { 
-                "planType": "invoice"
+                "planType": "invoice",
+                "chargeDate": charge_date
             },
             "lines": lines,
             "externalReferenceId": doc.name,
@@ -86,11 +97,24 @@ def create_balance_transaction(doc, settings):
                 "countryCode": country.code or ""
             },
             "totalDiscount": float(doc.discount_amount or 0),
+            "netDaysOptions": [
+                60,
+                30
+            ],
+            "allowedPaymentMethods": [
+                "payWithTerms",
+                "creditCard"
+            ],
+            "allowedTermsPaymentMethods": [
+                "creditCard",
+                "achDebit"
+            ],
             "marketplaceFixedTake": 0,
             "autoPayouts": False,
             "statementDescriptor": {
                 "charge": "Balance Invoice Processed via ERPNext"
-            }
+            },
+            "notes": "Balance Invoice Processed via ERPNext"
         }
         
         # Make API request
