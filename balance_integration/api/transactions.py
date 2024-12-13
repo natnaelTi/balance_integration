@@ -127,7 +127,7 @@ def confirm_transaction(transaction_id, settings):
         else:
             frappe.throw(_("Failed to confirm transaction"))
     except Exception as e:
-        frappe.throw(_("Error confirming transaction: {0}").format(str(e)[:340]))
+        frappe.throw(_("Error confirming transaction: {0}").format(str(e)[:140]))
 
 def capture_transaction(transaction_id, settings):
     """Capture a Balance transaction"""

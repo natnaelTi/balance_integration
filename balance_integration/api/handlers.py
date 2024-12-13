@@ -50,7 +50,7 @@ def handle_sales_invoice_submit(doc, method):
         
     except Exception as e:
         # Limit error message length for logging
-        short_error = str(e)[:340] if len(str(e)) > 340 else str(e)
+        short_error = str(e)[:140] if len(str(e)) > 140 else str(e)
         frappe.log_error(short_error, "Balance Payment Error")
         frappe.throw(_("Error processing Balance payment: {0}").format(short_error))
 
