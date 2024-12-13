@@ -53,3 +53,11 @@ def make_request(method, endpoint, api_key, data=None):
         short_error = str(e)[:140] if len(str(e)) > 140 else str(e)
         frappe.log_error(f"API Error: {short_error}", "Balance API Error")
         raise
+
+def update_customer_data(customer, buyer_id):
+    # Store Balance transaction ID in custom field
+    frappe.db.set_value('Customer', customer, 'custom_balance_buyer_id', 
+                        buyer_id, update_modified=False)
+    frappe.db.commit()
+    
+    frappe.msgprint(_("Balance Buyer ID successfully registered for {customer}"))

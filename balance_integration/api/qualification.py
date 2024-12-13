@@ -9,15 +9,9 @@ def send_qualification_link(customer):
         settings = get_balance_settings()
         customer_doc = frappe.get_doc("Customer", customer)
         
-        endpoint = f"{settings.api_base_url}/qualification-links"
-        payload = {
-            "customer": {
-                "email": customer_doc.email_id,
-                "name": customer_doc.customer_name
-            }
-        }
+        endpoint = f"{settings.api_base_url}/buyers/{customer_doc.custom_balance_buyer_id}/qualification"
         
-        return make_request("POST", endpoint, settings.api_key, payload)
+        return make_request("POST", endpoint, settings.api_key)
         
     except Exception as e:
         frappe.log_error(f"Balance Integration Error: {str(e)}", "Balance Qualification Link")

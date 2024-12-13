@@ -1,6 +1,9 @@
 import frappe
 from frappe import _
-from balance_integration.utils import get_balance_settings
+from balance_integration.utils import (
+    get_balance_settings,
+    update_customer_data
+)
 from balance_integration.api.transactions import (
     create_balance_transaction,
     confirm_transaction,
@@ -30,9 +33,15 @@ def handle_sales_invoice_submit(doc, method):
         transaction_id = transaction.get('id')
         if not transaction_id:
             frappe.throw(_("No transaction ID in Balance response"))
+
+        buyer_id = transaction.get('buyerId')
+        if not buyer_id:
+            frappe.throw(_("No buyer ID in Balance response"))
             
+        update_result = update_customer_data(doc.customer, buyer_id)
+
         # Confirm transaction
-        confirm_result = confirm_transaction(transaction_id, settings)
+        confirm_result = confirm_transaction(transaction_id, buyer_id, settings)
         if not confirm_result:
             frappe.throw(_("Failed to confirm transaction"))
         

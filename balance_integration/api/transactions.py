@@ -110,19 +110,46 @@ def create_balance_transaction(doc, settings):
         frappe.log_error(f"Error creating Balance transaction: {str(e)}")
         raise
 
-def confirm_transaction(transaction_id, settings):
+def generate_buyer_token(buyer_id, settings):
+    """Generate a buyer token for Balance"""
+    if not buyer_id:
+        frappe.throw(_("Buyer ID is required"))
+    endpoint = f"{settings.api_base_url}/buyers/{buyer_id}/token"
+
+    payload = {
+        "scope": "ADD_PAYMENT_METHOD"
+    }
+    try:
+        result = make_request("POST", endpoint, settings.api_key, payload)
+        if result and result.get('token'):
+            return result['token']
+        else:
+            frappe.throw(_("Failed to generate buyer token"))
+
+    except Exception as e:
+        frappe.log_error(f"Error generating buyer token: {str(e)}")
+        raise
+
+def confirm_transaction(transaction_id, buyer_id, settings):
     """Confirm a Balance transaction"""
     if not transaction_id:
         frappe.throw(_("Transaction ID is required"))
+
+    if not buyer_id:
+        frappe.throw(_("Buyer ID is required"))
+
+    token = generate_buyer_token(buyer_id, settings)
+    if not token:
+        frappe.throw(_("Failed to generate buyer token"))
         
     endpoint = f"{settings.api_base_url}/transactions/{transaction_id}/confirm"
     
     # Required payload for confirm endpoint
     payload = {
-        "paymentMethodType": "creditCard",
+        "paymentMethodType": "payWithTerms",
         "isAuth": False,
-        "isFinanced": True,
-        "paymentMethodId": "0010",
+        "isFinanced": False,
+        "paymentMethodId": token,
         "termsNetDays": 60
     }
     
