@@ -39,9 +39,7 @@ def create_balance_transaction(doc, settings):
             frappe.throw(_("Invalid country code in shipping address"))
 
         # Create line items
-        lines = []
         line_items = []
-
         for item in doc.items:
             if not item.qty or not item.rate:
                 frappe.throw(_("Item quantity and rate are required"))
@@ -52,19 +50,15 @@ def create_balance_transaction(doc, settings):
                 "price": float(item.rate)
             }
             line_items.append(line_item)
-        
-        lines.append({
-            "lineItems": line_items
-        })
 
-        if doc.total_taxes_and_charges:
-            lines.append({
-                "tax": float(doc.total_taxes_and_charges)
-            })
+        # Create lines array with a single object containing both lineItems and tax
+        lines = [{
+            "lineItems": line_items,
+            "tax": float(doc.total_taxes_and_charges) if doc.total_taxes_and_charges else 0
+        }]
 
         # Format the posting date as ISO string
         charge_date = doc.posting_date.strftime("%Y-%m-%d") if doc.posting_date else None
-        frappe.log_error(f"Posting Date: {charge_date}")
 
         # Create payload
         payload = {
@@ -97,22 +91,13 @@ def create_balance_transaction(doc, settings):
                 "countryCode": country.code or ""
             },
             "totalDiscount": float(doc.discount_amount or 0),
-            "netDaysOptions": [
-                60,
-                30
-            ],
-            "allowedPaymentMethods": [
-                "payWithTerms",
-                "creditCard"
-            ],
-            "allowedTermsPaymentMethods": [
-                "creditCard",
-                "achDebit"
-            ],
+            "netDaysOptions": [60, 30],
+            "allowedPaymentMethods": ["payWithTerms", "creditCard"],
+            "allowedTermsPaymentMethods": ["creditCard", "achDebit"],
             "marketplaceFixedTake": 0,
             "autoPayouts": False,
             "statementDescriptor": {
-                "charge": "Balance Invoice Processed via ERPNext"
+                "charge": "ERPNext Invoice"
             },
             "notes": "Balance Invoice Processed via ERPNext"
         }
@@ -127,8 +112,11 @@ def create_balance_transaction(doc, settings):
 
 def confirm_transaction(transaction_id, settings):
     """Confirm a Balance transaction"""
+    payload = {
+            "paymentMethodType": "invoice"
+    }
     endpoint = f"{settings.api_base_url}/transactions/{transaction_id}/confirm"
-    return make_request("POST", endpoint, settings.api_key)
+    return make_request("POST", endpoint, settings.api_key, payload)
 
 def capture_transaction(transaction_id, settings):
     """Capture a Balance transaction"""

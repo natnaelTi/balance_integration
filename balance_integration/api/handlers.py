@@ -22,19 +22,31 @@ def handle_sales_invoice_submit(doc, method):
         
         # Create transaction
         transaction = create_balance_transaction(invoice, settings)
-        if not transaction or not transaction.get('id'):
-            frappe.throw(_("Failed to create Balance transaction"))
+        
+        # Validate transaction response
+        if not transaction:
+            frappe.throw(_("No response from Balance API"))
+            
+        transaction_id = transaction.get('id')
+        if not transaction_id:
+            frappe.throw(_("No transaction ID in Balance response"))
+            
+        frappe.log_error(f"Created Balance transaction: {transaction_id}")
         
         # Confirm transaction
-        confirm_transaction(transaction['id'], settings)
+        confirm_result = confirm_transaction(transaction_id, settings)
+        frappe.log_error(f"Confirmed transaction: {transaction_id}")
         
         # Capture transaction
-        capture_transaction(transaction['id'], settings)
+        capture_result = capture_transaction(transaction_id, settings)
+        frappe.log_error(f"Captured transaction: {transaction_id}")
         
         # Store Balance transaction ID in custom field
-        frappe.db.set_value('Sales Invoice', doc.name, 'balance_transaction_id', 
-                           transaction['id'], update_modified=False)
+        frappe.db.set_value('Sales Invoice', doc.name, 'custom_balance_transaction_id', 
+                           transaction_id, update_modified=False)
         frappe.db.commit()
+        
+        frappe.msgprint(_("Balance payment processed successfully"))
         
     except Exception as e:
         frappe.log_error(str(e), "Balance Payment Processing Error")

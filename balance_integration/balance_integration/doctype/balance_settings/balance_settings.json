@@ -12,7 +12,7 @@
  "fields": [
   {
    "fieldname": "api_key",
-   "fieldtype": "Password",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "API Key",
    "reqd": 1
@@ -29,7 +29,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-12-08 14:04:55.395241",
+ "modified": "2024-12-13 08:59:51.835654",
  "modified_by": "Administrator",
  "module": "Balance Integration",
  "name": "Balance Settings",
