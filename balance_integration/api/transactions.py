@@ -112,11 +112,22 @@ def create_balance_transaction(doc, settings):
 
 def confirm_transaction(transaction_id, settings):
     """Confirm a Balance transaction"""
-    payload = {
-            "paymentMethodType": "invoice"
-    }
+    if not transaction_id:
+        frappe.throw(_("Transaction ID is required"))
+        
     endpoint = f"{settings.api_base_url}/transactions/{transaction_id}/confirm"
-    return make_request("POST", endpoint, settings.api_key, payload)
+    
+    # Required payload for confirm endpoint
+    payload = { "paymentMethodType": "payWithTerms" }
+    
+    try:
+        result = make_request("POST", endpoint, settings.api_key, payload)
+        if result and result.get('status') == 'confirmed':
+            return result
+        else:
+            frappe.throw(_("Failed to confirm transaction"))
+    except Exception as e:
+        frappe.throw(_("Error confirming transaction: {0}").format(str(e)[:340]))
 
 def capture_transaction(transaction_id, settings):
     """Capture a Balance transaction"""

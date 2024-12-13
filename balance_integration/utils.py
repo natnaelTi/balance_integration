@@ -37,7 +37,10 @@ def make_request(method, endpoint, api_key, data=None):
         
         # Handle different response codes
         if response.status_code == 401:
-            frappe.throw(_("Authentication failed. Please verify your API key format and value."))
+            frappe.throw(_("Authentication failed. Please verify your API key."))
+        elif response.status_code == 400:
+            error_msg = response.json().get('message', 'Bad Request')
+            frappe.throw(_(f"API Error: {error_msg[:340]}"))
         elif response.status_code in [200, 201]:  # Success codes
             return response.json()
         else:
@@ -46,6 +49,7 @@ def make_request(method, endpoint, api_key, data=None):
         return response.json()
         
     except requests.exceptions.RequestException as e:
-        error_msg = f"API Error: {str(e)}"
-        frappe.log_error(error_msg)
+        # Limit error message length
+        short_error = str(e)[:340] if len(str(e)) > 340 else str(e)
+        frappe.log_error(f"API Error: {short_error}", "Balance API Error")
         raise

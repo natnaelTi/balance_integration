@@ -31,15 +31,15 @@ def handle_sales_invoice_submit(doc, method):
         if not transaction_id:
             frappe.throw(_("No transaction ID in Balance response"))
             
-        frappe.log_error(f"Created Balance transaction: {transaction_id}")
-        
         # Confirm transaction
         confirm_result = confirm_transaction(transaction_id, settings)
-        frappe.log_error(f"Confirmed transaction: {transaction_id}")
+        if not confirm_result:
+            frappe.throw(_("Failed to confirm transaction"))
         
         # Capture transaction
         capture_result = capture_transaction(transaction_id, settings)
-        frappe.log_error(f"Captured transaction: {transaction_id}")
+        if not capture_result:
+            frappe.throw(_("Failed to capture transaction"))
         
         # Store Balance transaction ID in custom field
         frappe.db.set_value('Sales Invoice', doc.name, 'custom_balance_transaction_id', 
@@ -49,8 +49,10 @@ def handle_sales_invoice_submit(doc, method):
         frappe.msgprint(_("Balance payment processed successfully"))
         
     except Exception as e:
-        frappe.log_error(str(e), "Balance Payment Processing Error")
-        frappe.throw(_("Error processing Balance payment. Please check error logs."))
+        # Limit error message length for logging
+        short_error = str(e)[:340] if len(str(e)) > 340 else str(e)
+        frappe.log_error(short_error, "Balance Payment Error")
+        frappe.throw(_("Error processing Balance payment: {0}").format(short_error))
 
 def handle_credit_note_submit(doc, method):
     """Handle Credit Note submission by creating Balance credit note"""
