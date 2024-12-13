@@ -118,7 +118,13 @@ def confirm_transaction(transaction_id, settings):
     endpoint = f"{settings.api_base_url}/transactions/{transaction_id}/confirm"
     
     # Required payload for confirm endpoint
-    payload = { "paymentMethodType": "payWithTerms" }
+    payload = {
+        "paymentMethodType": "creditCard",
+        "isAuth": False,
+        "isFinanced": True,
+        "paymentMethodId": "0010",
+        "termsNetDays": 60
+    }
     
     try:
         result = make_request("POST", endpoint, settings.api_key, payload)
