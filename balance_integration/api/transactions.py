@@ -110,24 +110,45 @@ def create_balance_transaction(doc, settings):
         frappe.log_error(f"Error creating Balance transaction: {str(e)}")
         raise
 
-def generate_buyer_token(buyer_id, settings):
-    """Generate a buyer token for Balance"""
+def get_payment_method_id(buyer_id, settings):
+    """Fetch buyer's payment method ID for Balance"""
     if not buyer_id:
         frappe.throw(_("Buyer ID is required"))
-    endpoint = f"{settings.api_base_url}/buyers/{buyer_id}/token"
 
-    payload = {
-        "scope": "ADD_PAYMENT_METHOD"
-    }
+    endpoint = f"{settings.api_base_url}/buyers/{buyer_id}"
+
     try:
-        result = make_request("POST", endpoint, settings.api_key, payload)
-        if result and result.get('token'):
-            return result['token']
-        else:
-            frappe.throw(_("Failed to generate buyer token"))
+        # Make GET request to fetch buyer data
+        result = make_request("GET", endpoint, settings.api_key)
+        if not result:
+            frappe.throw(_("No response from Balance API"))
+            
+        # Check banks array first
+        if result.get('banks'):
+            for bank in result['banks']:
+                if bank.get('id'):
+                    # frappe.log_error(f"Buyer's payment method ID: {bank['id']}")
+                    return bank['id']
+                    
+        # Check creditCards array next
+        if result.get('creditCards'):
+            for card in result['creditCards']:
+                if card.get('id'):
+                    # frappe.log_error(f"Buyer's payment method ID: {card['id']}")
+                    return card['id']
+                    
+        # Check bankTransfers array last
+        if result.get('bankTransfers'):
+            for transfer in result['bankTransfers']:
+                if transfer.get('id'):
+                    # frappe.log_error(f"Buyer's payment method ID: {transfer['id']}")
+                    return transfer['id']
+                    
+        # If no payment method ID found
+        frappe.throw(_("No payment method ID found for buyer"))
 
     except Exception as e:
-        frappe.log_error(f"Error generating buyer token: {str(e)}")
+        frappe.log_error(f"Error fetching buyer's payment method ID: {str(e)[:140]}")
         raise
 
 def confirm_transaction(transaction_id, buyer_id, settings):
@@ -138,24 +159,24 @@ def confirm_transaction(transaction_id, buyer_id, settings):
     if not buyer_id:
         frappe.throw(_("Buyer ID is required"))
 
-    token = generate_buyer_token(buyer_id, settings)
-    if not token:
-        frappe.throw(_("Failed to generate buyer token"))
+    payment_method_id = get_payment_method_id(buyer_id, settings)
+    if not payment_method_id:
+        frappe.throw(_("Failed to fetch buyer's payment method ID"))
         
     endpoint = f"{settings.api_base_url}/transactions/{transaction_id}/confirm"
     
     # Required payload for confirm endpoint
     payload = {
         "paymentMethodType": "payWithTerms",
-        "isAuth": False,
+        "isAuth": True,
         "isFinanced": False,
-        "paymentMethodId": token,
+        "paymentMethodId": payment_method_id,
         "termsNetDays": 60
     }
     
     try:
         result = make_request("POST", endpoint, settings.api_key, payload)
-        if result and result.get('status') == 'confirmed':
+        if result and result.get('status_code') == 201:
             return result
         else:
             frappe.throw(_("Failed to confirm transaction"))
@@ -164,5 +185,16 @@ def confirm_transaction(transaction_id, buyer_id, settings):
 
 def capture_transaction(transaction_id, settings):
     """Capture a Balance transaction"""
+    if not transaction_id:
+        frappe.throw(_("Transaction ID is required"))
+
     endpoint = f"{settings.api_base_url}/transactions/{transaction_id}/capture"
-    return make_request("POST", endpoint, settings.api_key)
+
+    try:
+        result = make_request("POST", endpoint, settings.api_key)
+        if result and result.get('status_code') == 201:
+            return result
+        else:
+            frappe.throw(_("Failed to capture transaction"))
+    except Exception as e:
+        frappe.throw(_("Error capturing transaction: {0}").format(str(e)[:140]))

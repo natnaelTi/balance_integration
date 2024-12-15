@@ -55,7 +55,7 @@ def make_request(method, endpoint, api_key, data=None):
         raise
 
 def update_customer_data(customer, buyer_id):
-    # Store Balance transaction ID in custom field
+    # Store Balance buyer ID in custom field
     frappe.db.set_value('Customer', customer, 'custom_balance_buyer_id', 
                         buyer_id, update_modified=False)
     frappe.db.commit()
