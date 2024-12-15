@@ -92,8 +92,8 @@ def create_balance_transaction(doc, settings):
             },
             "totalDiscount": float(doc.discount_amount or 0),
             "netDaysOptions": [60, 30],
-            "allowedPaymentMethods": ["payWithTerms", "creditCard"],
-            "allowedTermsPaymentMethods": ["creditCard", "achDebit"],
+            "allowedPaymentMethods": ["invoice", "payWithTerms", "creditCard"],
+            "allowedTermsPaymentMethods": ["invoice", "creditCard", "achDebit"],
             "marketplaceFixedTake": 0,
             "autoPayouts": False,
             "statementDescriptor": {
@@ -159,18 +159,17 @@ def confirm_transaction(transaction_id, buyer_id, settings):
     if not buyer_id:
         frappe.throw(_("Buyer ID is required"))
 
-    payment_method_id = get_payment_method_id(buyer_id, settings)
-    if not payment_method_id:
-        frappe.throw(_("Failed to fetch buyer's payment method ID"))
+    # payment_method_id = get_payment_method_id(buyer_id, settings)
+    # if not payment_method_id:
+    #     frappe.throw(_("Failed to fetch buyer's payment method ID"))
         
     endpoint = f"{settings.api_base_url}/transactions/{transaction_id}/confirm"
     
     # Required payload for confirm endpoint
     payload = {
-        "paymentMethodType": "payWithTerms",
+        "paymentMethodType": "invoice",
         "isAuth": True,
         "isFinanced": False,
-        "paymentMethodId": payment_method_id,
         "termsNetDays": 60
     }
     
