@@ -145,7 +145,8 @@ fixtures = [
                     "Sales Invoice-custom_balance_details",
                     "Sales Invoice-custom_balance_transaction_id",
                     "Sales Invoice-custom_balance_invoice_id",
-                    "Sales Invoice-custom_balance_credit_note_id"
+                    "Sales Invoice-custom_balance_credit_note_id",
+                    "Customer-custom_balance_buyer_id"
                 )
             ]
         ]

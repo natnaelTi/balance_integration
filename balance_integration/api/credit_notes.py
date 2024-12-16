@@ -9,7 +9,7 @@ def create_balance_credit_note(doc, settings):
     payload = {
         "invoiceId": doc.custom_balance_invoice_id,
         "lines": [{
-            "amount": doc.grand_total,
+            "amount": abs(doc.grand_total),
             "reason": f"Returning against invoice: {doc.return_against} for {doc.remarks}"
         }]
     }

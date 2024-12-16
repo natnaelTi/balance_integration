@@ -87,13 +87,21 @@ def process_balance_credit_note(doc, method):
         # Validate credit note response
         if not credit_note:
             frappe.throw(_("No response from Balance API"))
+        
+        credit_note_id = credit_note.get('id')
+        #Store Balance credit note ID in custom field
+        frappe.db.set_value('Sales Invoice', doc.name, 'custom_balance_credit_note_id', 
+                           credit_note_id, update_modified=False)
+        frappe.db.commit()
+        
+        frappe.msgprint(_("Balance credit note processed successfully"))
     except Exception as e:
         frappe.log_error(f"Balance Integration Error: {str(e)}", "Balance Credit Note Processing")
         frappe.throw(_("Error processing Balance credit note. Please check error logs."))
 
 def handle_sales_invoice_submit(doc, method):
     if doc.is_return:
-        process_balance_transaction(doc, method)
+        process_balance_credit_note(doc, method)
 
     if not doc.is_return:
-        process_balance_credit_note(doc, method)
+        process_balance_transaction(doc, method)
