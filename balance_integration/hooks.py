@@ -125,9 +125,6 @@ app_license = "mit"
 doc_events = {
     "Sales Invoice": {
         "on_submit": "balance_integration.api.handlers.handle_sales_invoice_submit",
-    },
-    "Credit Note": {
-        "on_submit": "balance_integration.api.handlers.handle_credit_note_submit",
     }
 }
 
@@ -141,7 +138,16 @@ fixtures = [
     {
         "doctype": "Custom Field",
         "filters": [
-            ["name", "=", "Sales Invoice-balance_transaction_id"]
+            [
+                "name",
+                "in",
+                (
+                    "Sales Invoice-custom_balance_details",
+                    "Sales Invoice-custom_balance_transaction_id",
+                    "Sales Invoice-custom_balance_invoice_id",
+                    "Sales Invoice-custom_balance_credit_note_id"
+                )
+            ]
         ]
     }
 ]

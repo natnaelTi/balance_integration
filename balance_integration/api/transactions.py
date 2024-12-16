@@ -175,7 +175,7 @@ def confirm_transaction(transaction_id, buyer_id, settings):
     
     try:
         result = make_request("POST", endpoint, settings.api_key, payload)
-        if result and result.get('status_code') == 201:
+        if result and result.get('status') == "auth":
             return result
         else:
             frappe.throw(_("Failed to confirm transaction"))
@@ -191,7 +191,7 @@ def capture_transaction(transaction_id, settings):
 
     try:
         result = make_request("POST", endpoint, settings.api_key)
-        if result and result.get('status_code') == 201:
+        if result and result.get('status') == "closed":
             return result
         else:
             frappe.throw(_("Failed to capture transaction"))
